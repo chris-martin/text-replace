@@ -4,11 +4,8 @@
 resolver: lts-2.22
 
 packages:
-  - foo
+  - text-replace
 
 flags:
   foo:
-    enable-hedgehog: false
     enable-doctest: false
-    semigroup-in-base: false
-    identity-in-base: false

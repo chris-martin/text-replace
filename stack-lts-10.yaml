@@ -4,4 +4,4 @@
 resolver: lts-10.1
 
 packages:
-  - foo
+  - text-replace

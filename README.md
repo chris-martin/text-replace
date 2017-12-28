@@ -1,3 +1,3 @@
-# foo
+# text-replace
 
-[![](https://travis-ci.org/chris-martin/foo.svg)](https://travis-ci.org/chris-martin/foo)
+[![](https://travis-ci.org/chris-martin/text-replace.svg)](https://travis-ci.org/chris-martin/text-replace)
