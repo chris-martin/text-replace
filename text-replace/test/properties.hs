@@ -13,7 +13,7 @@ import qualified System.Exit    as Exit
 import qualified System.IO      as IO
 
 -- hedgehog
-import           Hedgehog     (Property, forAll, property, (===), withTests)
+import           Hedgehog     (Property, forAll, property, withTests, (===))
 import qualified Hedgehog
 import qualified Hedgehog.Gen as Gen
 
@@ -58,7 +58,7 @@ prop_replace_overlap = withTests 1 $ property $
 
 drawReplacementsTrie :: [Replace] -> Text
 drawReplacementsTrie =
-  listToMap >>> mapToTrie >>> drawTrie >>> Text.pack
+  listToTrie >>> drawTrie >>> Text.pack
 
 prop_drawTrie :: Property
 prop_drawTrie = property $ do

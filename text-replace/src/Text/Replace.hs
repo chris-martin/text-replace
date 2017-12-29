@@ -7,7 +7,7 @@ module Text.Replace
   , Replace (..), ReplaceMap, listToMap
 
   -- * Replacements in trie structure
-  , Trie, Trie' (..), mapToTrie, drawTrie
+  , Trie, Trie' (..), listToTrie, mapToTrie, drawTrie
 
   -- * Non-empty string
   , String' (..), string'fromString, string'head, string'tail
@@ -32,7 +32,7 @@ import           Data.Tree       (Tree)
 import qualified Data.Tree       as Tree
 
 replaceWithList :: [Replace] -> String -> String
-replaceWithList = listToMap >>> replaceWithMap
+replaceWithList = listToTrie >>> replaceWithTrie
 
 replaceWithMap :: ReplaceMap -> String -> String
 replaceWithMap = mapToTrie >>> replaceWithTrie
@@ -117,31 +117,34 @@ trieTree c (Trie' r bs) =
                    (trieForest bs)
 
 mapToTrie :: ReplaceMap -> Trie
-mapToTrie = Map.toAscList >>> listToTrie
+mapToTrie = Map.toAscList >>> ascListToTrie
 
-listToTrie
+listToTrie :: [Replace] -> Trie
+listToTrie = listToMap >>> mapToTrie
+
+ascListToTrie
   :: Foldable f
   => f (String', String)  -- ^ 🌶️ Must be in ascending order by the left side
                           --   of the tuple (this precondition is not checked)
   -> Trie
-listToTrie =
+ascListToTrie =
   NonEmpty.groupBy ((==) `on` (fst >>> string'head)) >>>
   fmap (\xs -> (firstChar xs, subtrie xs)) >>>
   Map.fromAscList
   where
     firstChar = NonEmpty.head >>> fst >>> string'head
-    subtrie = fmap (\(x, y) -> (string'tail x, y)) >>> listToTrie'
+    subtrie = fmap (\(x, y) -> (string'tail x, y)) >>> ascListToTrie'
 
-listToTrie'
+ascListToTrie'
   :: Foldable f
   => f (String, String)  -- ^ 🌶️ Must be in ascending order by the left side
                          --   of the tuple (this precondition is not checked)
   -> Trie'
-listToTrie' = Foldable.toList >>> f
+ascListToTrie' = Foldable.toList >>> f
   where
     f :: [(String, String)] -> Trie'
     f (([], x) : xs) = Trie' (Just x) (g xs)
     f xs             = Trie' Nothing (g xs)
 
     g :: (Foldable f, Functor f) => f (String, String) -> Trie
-    g = fmap (first string'fromString) >>> listToTrie
+    g = fmap (first string'fromString) >>> ascListToTrie
