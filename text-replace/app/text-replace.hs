@@ -1,6 +1,7 @@
 import Text.Replace
 
 -- base
+import Control.Arrow ((>>>))
 import Control.Applicative ((<|>))
 import Data.Bifunctor (first)
 import Data.Maybe (fromMaybe)
@@ -8,6 +9,7 @@ import Data.Semigroup ((<>))
 import Data.Function ((&))
 import Data.Functor (void)
 import qualified System.IO as IO
+import System.Exit (die)
 
 -- optparse-applicative
 import qualified Options.Applicative as Opt
@@ -23,19 +25,35 @@ optsParserInfo = Opt.info (Opt.helper <*> optsParser) $
              \of search/replace pairs" <>
   Opt.footer "All streams are assumed to be UTF-8 encoded."
 
+enc :: IO.TextEncoding
+enc = IO.utf8
+
 main :: IO ()
 main = do
   opts <- Opt.execParser optsParserInfo
-  IO.hSetEncoding IO.stdout IO.utf8
-  IO.hSetEncoding IO.stderr IO.utf8
+  IO.hSetEncoding IO.stdout enc
+  IO.hSetEncoding IO.stderr enc
+
+  argMapping <- case opt_mapping opts of
+    Nothing -> pure []
+    Just x -> parseReplacementList' (opt_delimiter opts) "--mapping" x
+
+  fileMapping <- case opt_mapFile opts of
+    Nothing -> pure []
+    Just path -> IO.withFile path IO.ReadMode $ \h -> do
+      IO.hSetEncoding h enc
+      x <- IO.hGetContents h
+      parseReplacementList' (opt_delimiter opts) path x
+
+  undefined
 
 data Opts =
   Opts
-    { inFile :: Maybe FilePath
-    , outFile :: Maybe FilePath
-    , mapping :: Maybe String
-    , mapFile :: Maybe FilePath
-    , delimiter :: Delimiter
+    { opt_inFile :: Maybe FilePath
+    , opt_outFile :: Maybe FilePath
+    , opt_mapping :: Maybe String
+    , opt_mapFile :: Maybe FilePath
+    , opt_delimiter :: Delimiter
     }
 
 optsParser :: Opt.Parser Opts
@@ -87,7 +105,7 @@ delimiterParser = fmap (fromMaybe " ") $ Opt.optional $ Opt.strOption $
            \--mapping and in the contents of --map-file; defaults to space"
 
 parseReplacementList :: Delimiter -> P.SourceName -> String
-                     -> Either String [Replace]
+                     -> Either P.ParseError [Replace]
 parseReplacementList delim sourceName input =
   let
     delimP :: P.Parser ()
@@ -106,4 +124,8 @@ parseReplacementList delim sourceName input =
     replaceP = Replace <$> strP' <*> strP
 
   in
-    P.parse (P.many replaceP <* P.eof) sourceName input & first show
+    P.parse (P.many replaceP <* P.eof) sourceName input
+
+parseReplacementList' :: Delimiter -> P.SourceName -> String -> IO [Replace]
+parseReplacementList' delim sourceName input =
+  parseReplacementList delim sourceName input & either (show >>> die) pure
