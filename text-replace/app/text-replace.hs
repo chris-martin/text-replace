@@ -102,7 +102,7 @@ mappingParser = Opt.many $ Opt.strOption $
   Opt.metavar "MAPPING" <>
   Opt.long "mapping" <>
   Opt.short 'm' <>
-  Opt.help "A list of search/replace pairs, separated by DELIMITER"
+  Opt.help "A list of search/replace pairs, separated by any of the delimiters"
 
 mapFileParser :: Opt.Parser [FilePath]
 mapFileParser = Opt.many $ Opt.strOption $
@@ -110,7 +110,7 @@ mapFileParser = Opt.many $ Opt.strOption $
   Opt.long "map-file" <>
   Opt.short 'f' <>
   Opt.help "A file containing a list of search/replace pairs, \
-           \separated by DELIMITER"
+           \separated by any of the delimiters"
 
 type Delimiter = String
 
