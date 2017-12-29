@@ -4,24 +4,15 @@ env:
   global:
     - LC_ALL=en_US.UTF-8
   matrix:
-    - STACK_YAML=stack-lts-8.yaml
-    - STACK_YAML=stack-lts-9.yaml
-    - STACK_YAML=stack-lts-10.yaml
-    - STACK_YAML=stack-nightly.yaml
+    - ATTR=ghc-8-0-2
+    - ATTR=ghc-8-2-1
 
 cache:
   directories:
-    - $HOME/.stack
     - /nix/store
 
-before_install:
-  - nix-channel --add https://nixos.org/channels/nixos-17.09 nixpkgs
-  - nix-channel --update
-  - nix-env -i stack
-  - PATH=$HOME/.local/bin:$PATH stack upgrade --nix
-
 script:
-  - PATH=$HOME/.local/bin:$PATH stack test --nix --no-nix-pure --no-terminal --stack-yaml $STACK_YAML
+  - cd nix; nix-build --attr "$ATTR"
 
 notifications:
   email: false

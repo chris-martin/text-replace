@@ -1,9 +1,10 @@
 name: text-replace
 version: 0.0.0.1
 category: Text, Application
-synopsis: ...
+synopsis: Simple text replacements from a list of search/replace pairs
 
-description: ...
+description: A library and a command-line application for simple string
+             replacements in text files.
 
 homepage:    https://github.com/chris-martin/text-replace
 bug-reports: https://github.com/chris-martin/text-replace/issues
