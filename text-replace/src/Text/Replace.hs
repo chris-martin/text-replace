@@ -12,6 +12,9 @@ module Text.Replace
   -- * Non-empty string
   , String' (..), string'fromString, string'head, string'tail
 
+  -- * Re-exports
+  , NonEmpty (..)
+
   ) where
 
 -- base

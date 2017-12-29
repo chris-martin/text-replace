@@ -37,6 +37,7 @@ executable text-replace
   ghc-options: -Wall
   build-depends:
       base >=4 && <4.11
+    , parsec
     , optparse-applicative
     , text-replace
 
