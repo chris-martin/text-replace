@@ -28,7 +28,6 @@ library
   build-depends:
       base >=4 && <4.11
     , containers
-    , megaparsec
   exposed-modules: Text.Replace
 
 executable text-replace
