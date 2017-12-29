@@ -13,7 +13,7 @@ import qualified System.Exit    as Exit
 import qualified System.IO      as IO
 
 -- hedgehog
-import           Hedgehog     (Property, forAll, property, (===))
+import           Hedgehog     (Property, forAll, property, (===), withTests)
 import qualified Hedgehog
 import qualified Hedgehog.Gen as Gen
 
@@ -32,8 +32,33 @@ main = do
   success <- Hedgehog.checkParallel $$(Hedgehog.discover)
   unless success Exit.exitFailure
 
-f :: [Replace] -> Text
-f = replaceMapFromList >>> makeTrie >>> drawTrie >>> Text.pack
+prop_replace_1 :: Property
+prop_replace_1 = withTests 1 $ property $
+  let
+    xs = [ Replace "a" "b" ]
+  in
+    replaceWithList xs "banana" === "bbnbnb"
+
+prop_replace_swap :: Property
+prop_replace_swap = withTests 1 $ property $
+  let
+    xs = [ Replace "a" "b"
+         , Replace "b" "a" ]
+  in
+    replaceWithList xs "banana" === "abnbnb"
+
+prop_replace_overlap :: Property
+prop_replace_overlap = withTests 1 $ property $
+  let
+    xs = [ Replace "-" "1"
+         , Replace "--" "2"
+         , Replace "---" "3" ]
+  in
+    replaceWithList xs "-_--_---_----_-----" === "1_2_3_31_32"
+
+drawReplacementsTrie :: [Replace] -> Text
+drawReplacementsTrie =
+  listToMap >>> mapToTrie >>> drawTrie >>> Text.pack
 
 prop_drawTrie :: Property
 prop_drawTrie = property $ do
@@ -46,7 +71,7 @@ prop_drawTrie = property $ do
     , Replace "broke" "5"
     ]
 
-  f replacements === [text|
+  drawReplacementsTrie replacements === [text|
 
     a
     |
