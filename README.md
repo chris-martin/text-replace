@@ -4,6 +4,8 @@
 
 Perform simple replacements in a text file, using a list of search/replace pairs.
 
+The search for strings to replace is performed left-to-right, preferring longer matches to shorter ones.
+
 All streams are assumed to be UTF-8 encoded.
 
 ## Command-line options

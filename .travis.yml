@@ -4,8 +4,9 @@ env:
   global:
     - LC_ALL=en_US.UTF-8
   matrix:
+    - ATTR=oldest-supported-deps
     - ATTR=ghc-8-0-2
-    - ATTR=ghc-8-2-1
+    - ATTR=ghc-8-2-2
 
 cache:
   directories:
