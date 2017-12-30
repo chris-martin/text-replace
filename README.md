@@ -1,7 +1,5 @@
 # text-replace
 
-[![](https://travis-ci.org/chris-martin/text-replace.svg)](https://travis-ci.org/chris-martin/text-replace)
-
 Perform simple replacements in a text file, using a list of search/replace pairs.
 
 The search for strings to replace is performed left-to-right, preferring longer matches to shorter ones.
