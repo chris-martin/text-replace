@@ -20,26 +20,42 @@ All streams are assumed to be UTF-8 encoded.
 
 ## Examples
 
+`text-replace` is useful for replacing characters with escape sequences:
+
 ```
-$ echo "The (<&&>) operator" | text-replace --delimiter " " --mapping "& &amp; > &gt; < &lt;"
+$ echo "The (<&&>) operator"        \
+    | text-replace --delimiter " "  \
+                   --mapping "& &amp; > &gt; < &lt;"
 The (&lt;&amp;&amp;&gt;) operator
 ```
 
+You can use it to swap strings. In the following example we replace `*` with `**` and vice versa:
+
 ```
-$ echo "What *is* going on **here**?" | text-replace --delimiter " " --mapping "* ** ** *"
+$ echo "What *is* going on **here**?"  \
+    | text-replace --delimiter " "     \
+                   --mapping "* ** ** *"
 What **is** going on *here*?
 ```
 
+You also have the option to read the input string and replacement list from files, and to write the output to a file:
+
 ```
 $ cat input
-I am extremely apt to like Haskell once I develop sufficient aptitude with it.
+I am extremely apt to like Haskell once I develop sufficient
+aptitude with it.
 
 $ cat replacements
 apt -> likely
 aptitude -> ability
 like -> appreciate
 
-$ text-replace --map-file replacements --in-file input --out-file output -n -d " -> "
+$ text-replace --map-file replacements  \
+               --in-file input          \
+               --out-file output        \
+               --delimiter " -> "       \
+               --newline-delimiter
 
 $ cat output
-I am extremely likely to appreciate Haskell once I develop sufficient ability with it.
+I am extremely likely to appreciate Haskell once I develop
+sufficient ability with it.
