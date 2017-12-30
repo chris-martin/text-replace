@@ -24,3 +24,22 @@ All streams are assumed to be UTF-8 encoded.
 $ echo "The (<&&>) operator" | text-replace --delimiter " " --mapping "& &amp; > &gt; < &lt;"
 The (&lt;&amp;&amp;&gt;) operator
 ```
+
+```
+$ echo "What *is* going on **here**?" | text-replace --delimiter " " --mapping "* ** ** *"
+What **is** going on *here*?
+```
+
+```
+$ cat input
+I am extremely apt to like Haskell once I develop sufficient aptitude with it.
+
+$ cat replacements
+apt -> likely
+aptitude -> ability
+like -> appreciate
+
+$ text-replace --map-file replacements --in-file input --out-file output -n -d " -> "
+
+$ cat output
+I am extremely likely to appreciate Haskell once I develop sufficient ability with it.
