@@ -4,7 +4,9 @@ category: Text, Application
 synopsis: Simple text replacements from a list of search/replace pairs
 
 description: A library and a command-line application for simple string
-             replacements in text files.
+             replacements in text files. The search for strings to replace is
+             performed left-to-right, preferring longer matches to shorter
+             ones.
 
 homepage:    https://github.com/chris-martin/text-replace
 bug-reports: https://github.com/chris-martin/text-replace/issues
