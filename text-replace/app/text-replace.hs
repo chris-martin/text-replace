@@ -6,6 +6,7 @@ import           Control.Arrow       ((>>>))
 import           Data.Foldable       (asum)
 import           Data.Function       ((&))
 import           Data.Functor        (void)
+import           Data.List.NonEmpty  (NonEmpty (..))
 import           System.Exit         (die)
 import qualified System.IO           as IO
 
