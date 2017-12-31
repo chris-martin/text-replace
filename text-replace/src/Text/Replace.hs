@@ -111,8 +111,7 @@ means
 
 /When you encounter the string __@abc@__ in the input text, replace it with __@xyz@__./
 
-The first argument must be a non-empty string, because there is no sensible way
-to interpret "replace all occurrences of the empty string." -}
+The first argument must be a non-empty string, because there is no sensible way to interpret "replace all occurrences of the empty string." -}
 data Replace =
   Replace
     { replaceFrom :: String' -- ^ A string we're looking for
