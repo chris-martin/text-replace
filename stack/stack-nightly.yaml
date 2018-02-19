@@ -1,7 +1,7 @@
 # ghc 8.2.2
 # base 4.10.1.0
 
-resolver: nightly-2017-12-24
+resolver: nightly-2018-02-18
 
 packages:
   - ../text-replace
