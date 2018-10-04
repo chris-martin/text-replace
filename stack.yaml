@@ -1,0 +1,4 @@
+resolver: lts-12.11
+
+packages:
+  - text-replace
