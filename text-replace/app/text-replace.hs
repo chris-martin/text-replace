@@ -2,7 +2,6 @@ import Text.Replace
 
 -- base
 import           Control.Applicative ((<|>))
-import           Control.Arrow       ((>>>))
 import           Data.Foldable       (asum)
 import           Data.Function       ((&))
 import           Data.Functor        (void)
@@ -180,4 +179,4 @@ parseReplacementList delims sourceName input =
 
 parseReplacementList' :: [Delimiter] -> P.SourceName -> LT.Text -> IO [Replace]
 parseReplacementList' delims sourceName input =
-  parseReplacementList delims sourceName input & either (show >>> die) pure
+  parseReplacementList delims sourceName input & either (die . show) pure

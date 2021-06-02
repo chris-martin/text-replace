@@ -5,7 +5,6 @@
 import Text.Replace
 
 -- base
-import           Control.Arrow  ((>>>))
 import           Control.Monad  (unless)
 import           Data.Foldable  (for_)
 import qualified System.Exit    as Exit
@@ -56,7 +55,7 @@ prop_replace_overlap = withTests 1 $ property $
     replaceWithList xs "-_--_---_----_-----" === "1_2_3_31_32"
 
 drawReplacementsTrie :: [Replace] -> LT.Text
-drawReplacementsTrie = listToTrie >>> drawTrie
+drawReplacementsTrie = drawTrie . listToTrie
 
 prop_drawTrie :: Property
 prop_drawTrie = property $ do

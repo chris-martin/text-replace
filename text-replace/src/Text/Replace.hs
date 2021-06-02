@@ -15,7 +15,6 @@ module Text.Replace
   ) where
 
 -- base
-import           Control.Arrow      ((>>>))
 import qualified Data.Foldable      as Foldable
 import           Data.Function      (on)
 import qualified Data.List.NonEmpty as NonEmpty
@@ -41,7 +40,7 @@ replaceWithList
   => f Replace -- ^ List of replacement rules
   -> LT.Text   -- ^ Input string
   -> LT.Text   -- ^ Result after performing replacements on the input string
-replaceWithList = listToTrie >>> replaceWithTrie
+replaceWithList = replaceWithTrie . listToTrie
 
 {- | Apply a map of replacement rules to a string. The search for strings to replace is performed left-to-right, preferring longer matches to shorter ones.
 
@@ -50,7 +49,7 @@ replaceWithMap
   :: ReplaceMap -- ^ Map of replacement rules
   -> LT.Text    -- ^ Input string
   -> LT.Text    -- ^ Result after performing replacements on the input string
-replaceWithMap = mapToTrie >>> replaceWithTrie
+replaceWithMap = replaceWithTrie . mapToTrie
 
 {- | Apply a trie of replacement rules to a string. The search for strings to replace is performed left-to-right, preferring longer matches to shorter ones.
 
@@ -141,13 +140,13 @@ type ReplaceMap = Map Text' T.Text
 
 If the list contains more than one replacement for the same search string, the last mapping is used, and earlier mappings are ignored. -}
 listToMap :: Foldable f => f Replace -> ReplaceMap
-listToMap = Foldable.toList >>> fmap toTuple >>> Map.fromList
+listToMap = Map.fromList . fmap toTuple . Foldable.toList
   where
     toTuple x = (replaceFrom x, replaceTo x)
 
 {- | Convert a replacement map to a list of replacement rules. The rules in the list will be sorted according to their 'replaceFrom' field in ascending order. -}
 mapToAscList :: ReplaceMap -> [Replace]
-mapToAscList = Map.toAscList >>> fmap (\(x, y) -> Replace x y)
+mapToAscList = fmap (\(x, y) -> Replace x y) . Map.toAscList
 
 {- | A representation of a 'ReplaceMap' designed for efficient lookups when we perform the replacements in 'replaceWithTrie'.
 
@@ -164,12 +163,10 @@ data Trie' =
 
 {- | Draws a text diagram of a trie; useful for debugging. -}
 drawTrie :: Trie -> LT.Text
-drawTrie = trieForest >>> fmap (fmap T.unpack) >>> Tree.drawForest >>> LT.pack
+drawTrie = LT.pack . Tree.drawForest . fmap (fmap T.unpack) . trieForest
 
 trieForest :: Trie -> Tree.Forest T.Text
-trieForest =
-  Map.toAscList >>>
-  fmap (\(c, t) -> trieTree (T.singleton c) t)
+trieForest = fmap (\(c, t) -> trieTree (T.singleton c) t) . Map.toAscList
 
 trieTree :: T.Text -> Trie' -> Tree T.Text
 trieTree c (Trie' r bs) =
@@ -180,13 +177,13 @@ trieTree c (Trie' r bs) =
 
 {- | Convert a replacement map to a trie, which is used to efficiently implement 'replaceWithTrie'. -}
 mapToTrie :: ReplaceMap -> Trie
-mapToTrie = mapToAscList >>> ascListToTrie
+mapToTrie = ascListToTrie . mapToAscList
 
 {- | Convert a list of replacement rules to a trie, which is used to efficiently implement 'replaceWithTrie'.
 
 If the list contains more than one replacement for the same search string, the last mapping is used, and earlier mappings are ignored. -}
 listToTrie :: Foldable f => f Replace -> Trie
-listToTrie = listToMap >>> mapToTrie
+listToTrie = mapToTrie . listToMap
 
 {- | Convert a list of replacement rules to a 'Trie', where the rules must be sorted in ascending order by the 'replaceFrom' field.
 
@@ -199,12 +196,12 @@ ascListToTrie
                 -- 🌶️ Warning: this precondition is not checked
   -> Trie
 ascListToTrie =
-  NonEmpty.groupBy ((==) `on` (replaceFrom >>> text'head)) >>>
-  fmap (\xs -> (firstChar xs, subtrie xs)) >>>
-  Map.fromAscList
+    Map.fromAscList
+    . fmap (\xs -> (firstChar xs, subtrie xs))
+    . NonEmpty.groupBy ((==) `on` (text'head . replaceFrom))
   where
-    firstChar = NonEmpty.head >>> replaceFrom >>> text'head
-    subtrie = fmap (\(Replace x y) -> (text'tail x, y)) >>> ascListToTrie'
+    firstChar = text'head . replaceFrom . NonEmpty.head
+    subtrie = ascListToTrie' . fmap (\(Replace x y) -> (text'tail x, y))
 
 ascListToTrie'
   :: Foldable f
@@ -213,11 +210,11 @@ ascListToTrie'
                          --
                          -- 🌶️ Warning: this precondition is not checked
   -> Trie'
-ascListToTrie' = Foldable.toList >>> f
+ascListToTrie' = f . Foldable.toList
   where
     f :: [(T.Text, T.Text)] -> Trie'
     f ((a, x) : xs') | T.null a = Trie' (Just x) (g xs')
     f xs                        = Trie' Nothing (g xs)
 
     g :: (Foldable f, Functor f) => f (T.Text, T.Text) -> Trie
-    g = fmap (\(x, y) -> Replace (text'fromText x) y) >>> ascListToTrie
+    g = ascListToTrie . fmap (\(x, y) -> Replace (text'fromText x) y)
