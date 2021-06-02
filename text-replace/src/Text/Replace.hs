@@ -10,7 +10,7 @@ module Text.Replace
   , Trie, Trie' (..), listToTrie, ascListToTrie, mapToTrie, drawTrie
 
   -- * Non-empty text
-  , Text' (..), text'fromString, text'fromText, text'head, text'tail
+  , Text' (..), text'fromString, text'fromText
 
   ) where
 
@@ -82,7 +82,11 @@ replaceWithTrie1 trie xs =
                                       longerMatch -> longerMatch
 
 -- | Non-empty text.
-data Text' = Text' Char T.Text
+data Text' =
+  Text'
+    { text'head :: Char -- ^ The first character of a non-empty string.
+    , text'tail :: T.Text -- ^ All characters of a non-empty string except the first.
+    }
   deriving (Eq, Ord)
 
 instance Show Text'
@@ -111,14 +115,6 @@ text'fromText t =
   case T.uncons t of
     Nothing -> error "Text' cannot be empty"
     Just (x, xs) -> Text' x xs
-
-{- | The first character of a non-empty string. -}
-text'head :: Text' -> Char
-text'head (Text' x _) = x
-
-{- | All characters of a non-empty string except the first. -}
-text'tail :: Text' -> T.Text
-text'tail (Text' _ x) = x
 
 {- | A replacement rule.
 
