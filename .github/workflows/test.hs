@@ -16,12 +16,13 @@ main =
                         ]
             "8.4.3"  -> []
             "8.6.1"  -> []
-            "8.8.1"  -> []
+            "8.8.1"  -> [ "--constraint=optparse-applicative == 0.15.1.0"
+                        ]
             "8.10.2" -> []
             "9.0.1"  -> [ "--constraint=containers == 0.6.4.1"
                         , "--constraint=hedgehog == 1.0.5"
                         , "--constraint=neat-interpolation == 0.5.1.2"
-                        , "--constraint=optparse-applicative == 0.15.1.0"
+                        , "--constraint=optparse-applicative == 0.16.1.0"
                         , "--constraint=parsec == 3.1.14.0"
                         , "--constraint=text == 1.2.4.1"
                         ]
