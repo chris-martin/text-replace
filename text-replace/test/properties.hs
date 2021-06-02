@@ -8,7 +8,6 @@ import Text.Replace
 import           Control.Arrow  ((>>>))
 import           Control.Monad  (unless)
 import           Data.Foldable  (for_)
-import           Data.Semigroup ((<>))
 import qualified System.Exit    as Exit
 import qualified System.IO      as IO
 
@@ -20,9 +19,9 @@ import qualified Hedgehog.Gen as Gen
 -- neat-interpolation
 import NeatInterpolation (text)
 
--- test
-import           Data.Text (Text)
-import qualified Data.Text as Text
+-- text
+import qualified Data.Text      as T
+import qualified Data.Text.Lazy as LT
 
 main :: IO ()
 main = do
@@ -56,9 +55,8 @@ prop_replace_overlap = withTests 1 $ property $
   in
     replaceWithList xs "-_--_---_----_-----" === "1_2_3_31_32"
 
-drawReplacementsTrie :: [Replace] -> Text
-drawReplacementsTrie =
-  listToTrie >>> drawTrie >>> Text.pack
+drawReplacementsTrie :: [Replace] -> LT.Text
+drawReplacementsTrie = listToTrie >>> drawTrie
 
 prop_drawTrie :: Property
 prop_drawTrie = property $ do
@@ -71,7 +69,7 @@ prop_drawTrie = property $ do
     , Replace "broke" "5"
     ]
 
-  drawReplacementsTrie replacements === [text|
+  drawReplacementsTrie replacements === LT.fromStrict (T.append [text|
 
     a
     |
@@ -87,4 +85,4 @@ prop_drawTrie = property $ do
     |
     `- oke - "5"
 
-  |] <> "\n"
+  |] "\n")

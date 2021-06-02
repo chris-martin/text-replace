@@ -6,7 +6,6 @@ import           Control.Arrow       ((>>>))
 import           Data.Foldable       (asum)
 import           Data.Function       ((&))
 import           Data.Functor        (void)
-import           Data.List.NonEmpty  (NonEmpty (..))
 import           System.Exit         (die)
 import qualified System.IO           as IO
 
@@ -14,8 +13,13 @@ import qualified System.IO           as IO
 import qualified Options.Applicative as Opt
 
 -- parsec
-import qualified Text.Parsec        as P
-import           Text.Parsec.String as P (Parser)
+import qualified Text.Parsec           as P
+import           Text.Parsec.Text.Lazy as P (Parser)
+
+-- text
+import qualified Data.Text         as T
+import qualified Data.Text.Lazy    as LT
+import qualified Data.Text.Lazy.IO as LT
 
 (!) :: Monoid a => a -> a -> a
 (!) = mappend
@@ -51,16 +55,16 @@ main = do
     let
       f path = IO.withFile path IO.ReadMode $ \h -> do
         IO.hSetEncoding h enc
-        x <- IO.hGetContents h
+        x <- LT.hGetContents h
         parseReplacementList' d path x
      in
       foldMap f (opt_mapFile opts)
 
   withInputH (opt_inFile opts) $ \inH ->
     withOutputH (opt_outFile opts) $ \outH -> do
-      input <- IO.hGetContents inH
+      input <- LT.hGetContents inH
       let output = replaceWithList (argMapping ++ fileMapping) input
-      IO.hPutStr outH output
+      LT.hPutStr outH output
 
 withInputH :: Maybe FilePath -> (IO.Handle -> IO a) -> IO a
 withInputH Nothing f = f IO.stdin
@@ -74,7 +78,7 @@ data Opts =
   Opts
     { opt_inFile :: Maybe FilePath
     , opt_outFile :: Maybe FilePath
-    , opt_mapping :: [String]
+    , opt_mapping :: [LT.Text]
     , opt_mapFile :: [FilePath]
     , opt_delimiter :: [Delimiter]
     , opt_newlineDelimiter :: Bool
@@ -108,7 +112,7 @@ outFileParser
   ! Opt.short 'o'
   ! Opt.help "Output file to write (optional, defaults to stdout)"
 
-mappingParser :: Opt.Parser [String]
+mappingParser :: Opt.Parser [LT.Text]
 mappingParser
   = Opt.many
   $ Opt.strOption
@@ -152,21 +156,21 @@ delimiterOpt opts =
   opt_delimiter opts
   & (if opt_newlineDelimiter opts then ("\n" :) else id)
 
-parseReplacementList :: [Delimiter] -> P.SourceName -> String
+parseReplacementList :: [Delimiter] -> P.SourceName -> LT.Text
                      -> Either P.ParseError [Replace]
 parseReplacementList delims sourceName input =
   let
     delimP :: P.Parser ()
     delimP = delims & fmap (void . P.try . P.string) & asum
 
-    strP :: P.Parser String
-    strP = P.manyTill P.anyChar (delimP <|> P.eof)
+    strP :: P.Parser T.Text
+    strP = T.pack <$> P.manyTill P.anyChar (delimP <|> P.eof)
 
-    strP' :: P.Parser String'
+    strP' :: P.Parser Text'
     strP' = do
       x <- P.anyChar
-      xs <- P.manyTill P.anyChar (delimP)
-      pure $ String' (x :| xs)
+      xs <- T.pack <$> P.manyTill P.anyChar (delimP)
+      pure $ Text' x xs
 
     replaceP :: P.Parser Replace
     replaceP = Replace <$> strP' <*> strP
@@ -174,6 +178,6 @@ parseReplacementList delims sourceName input =
   in
     P.parse (P.many replaceP <* P.eof) sourceName input
 
-parseReplacementList' :: [Delimiter] -> P.SourceName -> String -> IO [Replace]
+parseReplacementList' :: [Delimiter] -> P.SourceName -> LT.Text -> IO [Replace]
 parseReplacementList' delims sourceName input =
   parseReplacementList delims sourceName input & either (show >>> die) pure

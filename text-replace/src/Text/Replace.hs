@@ -9,8 +9,8 @@ module Text.Replace
   -- * Replacements in trie structure
   , Trie, Trie' (..), listToTrie, ascListToTrie, mapToTrie, drawTrie
 
-  -- * Non-empty string
-  , String' (..), string'fromString, string'head, string'tail
+  -- * Non-empty text
+  , Text' (..), text'fromString, text'fromText, text'head, text'tail
 
   ) where
 
@@ -18,7 +18,6 @@ module Text.Replace
 import           Control.Arrow      ((>>>))
 import qualified Data.Foldable      as Foldable
 import           Data.Function      (on)
-import           Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NonEmpty
 import           Data.String        (IsString (..))
 
@@ -28,6 +27,10 @@ import qualified Data.Map.Strict as Map
 import           Data.Tree       (Tree)
 import qualified Data.Tree       as Tree
 
+-- text
+import qualified Data.Text      as T
+import qualified Data.Text.Lazy as LT
+
 {- | Apply a list of replacement rules to a string. The search for strings to replace is performed left-to-right, preferring longer matches to shorter ones.
 
 Internally, the list will be converted to a 'ReplaceMap' using 'listToMap'. If the list contains more than one replacement for the same search string, the last mapping is used, and earlier mappings are ignored.
@@ -36,8 +39,8 @@ If you are going to be applying the same list of rules to multiple input strings
 replaceWithList
   :: Foldable f
   => f Replace -- ^ List of replacement rules
-  -> String    -- ^ Input string
-  -> String    -- ^ Result after performing replacements on the input string
+  -> LT.Text   -- ^ Input string
+  -> LT.Text   -- ^ Result after performing replacements on the input string
 replaceWithList = listToTrie >>> replaceWithTrie
 
 {- | Apply a map of replacement rules to a string. The search for strings to replace is performed left-to-right, preferring longer matches to shorter ones.
@@ -45,63 +48,77 @@ replaceWithList = listToTrie >>> replaceWithTrie
 If you are going to be applying the same list of rules to multiple input strings, you should first convert the 'Map' to a 'Trie' using 'mapToTrie' and then use 'replaceWithTrie' instead. -}
 replaceWithMap
   :: ReplaceMap -- ^ Map of replacement rules
-  -> String     -- ^ Input string
-  -> String     -- ^ Result after performing replacements on the input string
+  -> LT.Text    -- ^ Input string
+  -> LT.Text    -- ^ Result after performing replacements on the input string
 replaceWithMap = mapToTrie >>> replaceWithTrie
 
 {- | Apply a trie of replacement rules to a string. The search for strings to replace is performed left-to-right, preferring longer matches to shorter ones.
 
 To construct a 'Trie', you may use 'listToTrie' or 'mapToTrie'. -}
 replaceWithTrie
-  :: Trie   -- ^ Map of replacement rules, represented as a trie
-  -> String -- ^ Input string
-  -> String -- ^ Result after performing replacements on the input string
+  :: Trie    -- ^ Map of replacement rules, represented as a trie
+  -> LT.Text -- ^ Input string
+  -> LT.Text -- ^ Result after performing replacements on the input string
 replaceWithTrie trie = go
   where
-    go [] = []
-    go xs@(x : xs') =
-      case replaceWithTrie1 trie xs of
-        Nothing -> x : go xs'
-        Just (r, xs'') -> r ++ go xs''
+    go xs =
+      case LT.uncons xs of
+        Nothing -> LT.empty
+        Just (x, xs') ->
+          case replaceWithTrie1 trie xs of
+            Nothing -> LT.cons x (go xs')
+            Just (r, xs'') -> LT.append (LT.fromStrict r) (go xs'')
 
-replaceWithTrie1 :: Trie -> String -> Maybe (String, String)
-replaceWithTrie1 _ [] = Nothing
-replaceWithTrie1 trie (x : xs) =
-  case Map.lookup x trie of
-    Nothing                  -> Nothing
-    Just (Trie' Nothing bs)  -> replaceWithTrie1 bs xs
-    Just (Trie' (Just r) bs) -> case replaceWithTrie1 bs xs of
-                                  Nothing -> Just (r, xs)
-                                  longerMatch -> longerMatch
+replaceWithTrie1 :: Trie -> LT.Text -> Maybe (T.Text, LT.Text)
+replaceWithTrie1 trie xs =
+  case LT.uncons xs of
+    Nothing -> Nothing
+    Just (x, xs') ->
+      case Map.lookup x trie of
+        Nothing                  -> Nothing
+        Just (Trie' Nothing bs)  -> replaceWithTrie1 bs xs'
+        Just (Trie' (Just r) bs) -> case replaceWithTrie1 bs xs' of
+                                      Nothing -> Just (r, xs')
+                                      longerMatch -> longerMatch
 
--- | Non-empty string.
-newtype String' = String' (NonEmpty Char)
+-- | Non-empty text.
+data Text' = Text' Char T.Text
   deriving (Eq, Ord)
 
-instance Show String'
+instance Show Text'
   where
-    showsPrec i (String' x) = showsPrec i (NonEmpty.toList x)
+    showsPrec i (Text' x xs) = showsPrec i (LT.cons x (LT.fromStrict xs))
 
-{- | @'fromString' = 'string'fromString'@
+{- | @'fromString' = 'text'fromString'@
 
-🌶️ Warning: @('fromString' "" :: 'String'') = ⊥@ -}
-instance IsString String'
+🌶️ Warning: @('fromString' "" :: 'Text'') = ⊥@ -}
+instance IsString Text'
   where
-    fromString = string'fromString
+    fromString = text'fromString
 
-{- | Convert an ordinary 'String' to a non-empty 'String''.
+{- | Convert an ordinary 'String' to a non-empty 'Text''.
 
-🌶️ Warning: @string'fromString "" = ⊥@ -}
-string'fromString :: String -> String'
-string'fromString = NonEmpty.fromList >>> String'
+🌶️ Warning: @text'fromString "" = ⊥@ -}
+text'fromString :: String -> Text'
+text'fromString [] = error "Text' cannot be empty"
+text'fromString (x : xs) = Text' x (T.pack xs)
+
+{- | Convert an ordinary 'T.Text' to a non-empty 'Text''.
+
+🌶️ Warning: @text'fromText "" = ⊥@ -}
+text'fromText :: T.Text -> Text'
+text'fromText t =
+  case T.uncons t of
+    Nothing -> error "Text' cannot be empty"
+    Just (x, xs) -> Text' x xs
 
 {- | The first character of a non-empty string. -}
-string'head :: String' -> Char
-string'head (String' x) = NonEmpty.head x
+text'head :: Text' -> Char
+text'head (Text' x _) = x
 
 {- | All characters of a non-empty string except the first. -}
-string'tail :: String' -> String
-string'tail (String' x) = NonEmpty.tail x
+text'tail :: Text' -> T.Text
+text'tail (Text' _ x) = x
 
 {- | A replacement rule.
 
@@ -114,15 +131,15 @@ means
 The first argument must be a non-empty string, because there is no sensible way to interpret "replace all occurrences of the empty string." -}
 data Replace =
   Replace
-    { replaceFrom :: String' -- ^ A string we're looking for
-    , replaceTo   :: String  -- ^ A string we're replacing it with
+    { replaceFrom :: Text' -- ^ A string we're looking for
+    , replaceTo   :: T.Text  -- ^ A string we're replacing it with
     }
     deriving (Eq, Show)
 
 {- | A map where the keys are strings we're looking for, and the values are strings with which we're replacing a key that we find.
 
 You may use 'listToMap' to construct a 'ReplaceMap' from a list of replacement rules, and you may use 'mapToAscList' to convert back to a list. -}
-type ReplaceMap = Map String' String
+type ReplaceMap = Map Text' T.Text
 
 {- | Construct a 'ReplaceMap' from a list of replacement rules.
 
@@ -144,25 +161,25 @@ type Trie = Map Char Trie'
 {- | A variant of 'Trie' which may contain a value at the root of the tree. -}
 data Trie' =
   Trie'
-    { trieRoot     :: Maybe String
+    { trieRoot     :: Maybe T.Text
     , trieBranches :: Trie
     }
   deriving (Eq, Show)
 
 {- | Draws a text diagram of a trie; useful for debugging. -}
-drawTrie :: Trie -> String
-drawTrie = trieForest >>> Tree.drawForest
+drawTrie :: Trie -> LT.Text
+drawTrie = trieForest >>> fmap (fmap T.unpack) >>> Tree.drawForest >>> LT.pack
 
-trieForest :: Trie -> Tree.Forest String
+trieForest :: Trie -> Tree.Forest T.Text
 trieForest =
   Map.toAscList >>>
-  fmap (\(c, t) -> trieTree [c] t)
+  fmap (\(c, t) -> trieTree (T.singleton c) t)
 
-trieTree :: String -> Trie' -> Tree String
+trieTree :: T.Text -> Trie' -> Tree T.Text
 trieTree c (Trie' r bs) =
   case (r, Map.toAscList bs) of
-    (Nothing, [(c', t)]) -> trieTree (c ++ [c']) t
-    _ -> Tree.Node (c ++ maybe "" (\rr -> " - " ++ show rr) r)
+    (Nothing, [(c', t)]) -> trieTree (T.snoc c c') t
+    _ -> Tree.Node (T.append c (maybe T.empty (\rr -> T.pack (" - " ++ show rr)) r))
                    (trieForest bs)
 
 {- | Convert a replacement map to a trie, which is used to efficiently implement 'replaceWithTrie'. -}
@@ -186,25 +203,25 @@ ascListToTrie
                 -- 🌶️ Warning: this precondition is not checked
   -> Trie
 ascListToTrie =
-  NonEmpty.groupBy ((==) `on` (replaceFrom >>> string'head)) >>>
+  NonEmpty.groupBy ((==) `on` (replaceFrom >>> text'head)) >>>
   fmap (\xs -> (firstChar xs, subtrie xs)) >>>
   Map.fromAscList
   where
-    firstChar = NonEmpty.head >>> replaceFrom >>> string'head
-    subtrie = fmap (\(Replace x y) -> (string'tail x, y)) >>> ascListToTrie'
+    firstChar = NonEmpty.head >>> replaceFrom >>> text'head
+    subtrie = fmap (\(Replace x y) -> (text'tail x, y)) >>> ascListToTrie'
 
 ascListToTrie'
   :: Foldable f
-  => f (String, String)  -- ^ This list must be sorted according to the left
+  => f (T.Text, T.Text)  -- ^ This list must be sorted according to the left
                          --   field of the tuple in ascending order
                          --
                          -- 🌶️ Warning: this precondition is not checked
   -> Trie'
 ascListToTrie' = Foldable.toList >>> f
   where
-    f :: [(String, String)] -> Trie'
-    f (([], x) : xs) = Trie' (Just x) (g xs)
-    f xs             = Trie' Nothing (g xs)
+    f :: [(T.Text, T.Text)] -> Trie'
+    f ((a, x) : xs') | T.null a = Trie' (Just x) (g xs')
+    f xs                        = Trie' Nothing (g xs)
 
-    g :: (Foldable f, Functor f) => f (String, String) -> Trie
-    g = fmap (\(x, y) -> Replace (string'fromString x) y) >>> ascListToTrie
+    g :: (Foldable f, Functor f) => f (T.Text, T.Text) -> Trie
+    g = fmap (\(x, y) -> Replace (text'fromText x) y) >>> ascListToTrie
