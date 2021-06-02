@@ -17,7 +17,7 @@ import qualified Hedgehog
 import qualified Hedgehog.Gen as Gen
 
 -- neat-interpolation
-import NeatInterpolation (text)
+import qualified NeatInterpolation as N
 
 -- text
 import qualified Data.Text      as T
@@ -69,7 +69,7 @@ prop_drawTrie = property $ do
     , Replace "broke" "5"
     ]
 
-  drawReplacementsTrie replacements === LT.fromStrict (T.append [text|
+  drawReplacementsTrie replacements === LT.fromStrict (T.append [N.trimming|
 
     a
     |
@@ -85,7 +85,7 @@ prop_drawTrie = property $ do
     |
     `- oke - "5"
 
-  |] "\n")
+  |] "\n\n")
 
 prop_shuffle :: Property
 prop_shuffle = property $ do
