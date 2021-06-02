@@ -86,3 +86,16 @@ prop_drawTrie = property $ do
     `- oke - "5"
 
   |] "\n")
+
+prop_shuffle :: Property
+prop_shuffle = property $ do
+
+  replacements <- forAll $ Gen.shuffle
+    [ Replace "aft"   "1"
+    , Replace "after" "2"
+    , Replace "apply" "3"
+    , Replace "brain" "4"
+    , Replace "broke" "5"
+    ]
+
+  replaceWithList replacements "afteraftbrainapple" === "214apple"
