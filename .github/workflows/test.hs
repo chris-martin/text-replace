@@ -15,7 +15,9 @@ main =
                   ]
       "8.4.3"  -> callProcess "cabal" ["test", "all"]
       "8.6.1"  -> callProcess "cabal" ["test", "all"]
-      "8.8.1"  -> callProcess "cabal" ["test", "all"
+      "8.8.1"  -> callProcess "cabal" ["test", "all"]
+      "8.10.2" -> callProcess "cabal" ["test", "all"]
+      "9.0.1"  -> callProcess "cabal" ["test", "all"
                   , "--constraint=containers == 0.6.4.1"
                   , "--constraint=hedgehog == 1.0.5"
                   , "--constraint=neat-interpolation == 0.3.2.6"
