@@ -3,3 +3,4 @@ packages: text-replace
 constraints:
     base ^>= 4.13
   , optparse-applicative == 0.15.1.0
+  , text ^>= 1.2.4
