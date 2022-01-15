@@ -1,4 +1,0 @@
-cabal.config
-/nix/result*
-.stack-work
-dist
