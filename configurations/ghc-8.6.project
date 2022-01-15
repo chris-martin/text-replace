@@ -1,0 +1,4 @@
+packages: text-replace
+
+constraints:
+    base ^>= 4.12
