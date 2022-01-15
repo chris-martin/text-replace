@@ -8,6 +8,8 @@ jobs:
     name: Test the package
     runs-on: ${{ matrix.os }}
 
+    continue-on-error: true
+
     strategy:
       matrix:
         ghc: ['8.2', '8.4', '8.6', '8.8', '8.10', '9.0']
