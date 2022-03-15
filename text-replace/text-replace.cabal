@@ -51,7 +51,7 @@ executable text-replace
     hs-source-dirs: app
     main-is: text-replace.hs
     build-depends:
-        optparse-applicative ^>= 0.14.2 || ^>= 0.15 || ^>= 0.16
+        optparse-applicative ^>= 0.14.2 || ^>= 0.15 || ^>= 0.16 || ^>= 0.17
       , parsec ^>= 3.1.13
       , text-replace
 
