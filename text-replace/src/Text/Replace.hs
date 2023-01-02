@@ -1,18 +1,18 @@
 module Text.Replace
   (
-  -- * Performing replacement
-    replaceWithList, replaceWithMap, replaceWithTrie
+    -- * Performing replacement
+    replaceWithList, replaceWithMap, replaceWithTrie,
 
-  -- * Specifying replacements
-  , Replace (..), ReplaceMap, listToMap, mapToAscList
+    -- * Specifying replacements
+    Replace (..), ReplaceMap, listToMap, mapToAscList,
 
-  -- * Replacements in trie structure
-  , Trie, Trie' (..), listToTrie, ascListToTrie, mapToTrie, drawTrie
+    -- * Replacements in trie structure
+    Trie, Trie' (..), listToTrie, ascListToTrie, mapToTrie, drawTrie,
 
-  -- * Non-empty text
-  , Text' (..), text'fromString, text'fromText
-
-  ) where
+    -- * Non-empty text
+    Text' (..), text'fromString, text'fromText,
+  )
+  where
 
 -- base
 import qualified Data.Foldable      as Foldable
@@ -30,138 +30,147 @@ import qualified Data.Tree       as Tree
 import qualified Data.Text      as T
 import qualified Data.Text.Lazy as LT
 
-{- | Apply a list of replacement rules to a string. The search for strings to replace is performed left-to-right, preferring longer matches to shorter ones.
+{- | Apply a list of replacement rules to a string
 
-Internally, the list will be converted to a 'ReplaceMap' using 'listToMap'. If the list contains more than one replacement for the same search string, the last mapping is used, and earlier mappings are ignored.
+The search for strings to replace is performed left-to-right, preferring longer
+matches to shorter ones.
 
-If you are going to be applying the same list of rules to multiple input strings, you should first convert the list to a 'Trie' using 'listToTrie' and then use 'replaceWithTrie' instead. -}
-replaceWithList
-  :: Foldable f
-  => f Replace -- ^ List of replacement rules
+Internally, the list will be converted to a 'ReplaceMap' using 'listToMap'. If
+the list contains more than one replacement for the same search string, the last
+mapping is used, and earlier mappings are ignored.
+
+If you are going to be applying the same list of rules to multiple input
+strings, you should first convert the list to a 'Trie' using 'listToTrie' and
+then use 'replaceWithTrie' instead. -}
+replaceWithList :: Foldable f =>
+  f Replace    -- ^ List of replacement rules
   -> LT.Text   -- ^ Input string
   -> LT.Text   -- ^ Result after performing replacements on the input string
 replaceWithList = replaceWithTrie . listToTrie
 
-{- | Apply a map of replacement rules to a string. The search for strings to replace is performed left-to-right, preferring longer matches to shorter ones.
+{- | Apply a map of replacement rules to a string
 
-If you are going to be applying the same list of rules to multiple input strings, you should first convert the 'Map' to a 'Trie' using 'mapToTrie' and then use 'replaceWithTrie' instead. -}
-replaceWithMap
-  :: ReplaceMap -- ^ Map of replacement rules
+The search for strings to replace is performed left-to-right, preferring longer
+matches to shorter ones.
+
+If you are going to be applying the same list of rules to multiple input
+strings, you should first convert the 'Map' to a 'Trie' using 'mapToTrie' and
+then use 'replaceWithTrie' instead. -}
+replaceWithMap ::
+  ReplaceMap    -- ^ Map of replacement rules
   -> LT.Text    -- ^ Input string
   -> LT.Text    -- ^ Result after performing replacements on the input string
 replaceWithMap = replaceWithTrie . mapToTrie
 
-{- | Apply a trie of replacement rules to a string. The search for strings to replace is performed left-to-right, preferring longer matches to shorter ones.
+{- | Apply a trie of replacement rules to a string
+
+The search for strings to replace is performed left-to-right, preferring longer
+matches to shorter ones.
 
 To construct a 'Trie', you may use 'listToTrie' or 'mapToTrie'. -}
-replaceWithTrie
-  :: Trie    -- ^ Map of replacement rules, represented as a trie
+replaceWithTrie ::
+  Trie       -- ^ Map of replacement rules, represented as a trie
   -> LT.Text -- ^ Input string
   -> LT.Text -- ^ Result after performing replacements on the input string
 replaceWithTrie trie = go
   where
-    go xs =
-      case LT.uncons xs of
+    go xs = case LT.uncons xs of
         Nothing -> LT.empty
-        Just (x, xs') ->
-          case replaceWithTrie1 trie xs of
+        Just (x, xs') -> case replaceWithTrie1 trie xs of
             Nothing -> LT.cons x (go xs')
             Just (r, xs'') -> LT.append (LT.fromStrict r) (go xs'')
 
 replaceWithTrie1 :: Trie -> LT.Text -> Maybe (T.Text, LT.Text)
-replaceWithTrie1 trie xs =
-  case LT.uncons xs of
+replaceWithTrie1 trie xs = case LT.uncons xs of
     Nothing -> Nothing
-    Just (x, xs') ->
-      case Map.lookup x trie of
+    Just (x, xs') -> case Map.lookup x trie of
         Nothing                  -> Nothing
         Just (Trie' Nothing bs)  -> replaceWithTrie1 bs xs'
         Just (Trie' (Just r) bs) -> case replaceWithTrie1 bs xs' of
                                       Nothing -> Just (r, xs')
                                       longerMatch -> longerMatch
 
--- | Non-empty text.
-data Text' =
-  Text'
-    { text'head :: Char -- ^ The first character of a non-empty string.
-    , text'tail :: T.Text -- ^ All characters of a non-empty string except the first.
+-- | Non-empty text
+data Text' = Text'
+    { text'head :: Char -- ^ The first character of a non-empty string
+    , text'tail :: T.Text -- ^ All characters of a non-empty string except the first
     }
   deriving (Eq, Ord)
 
-instance Show Text'
-  where
+instance Show Text' where
     showsPrec i (Text' x xs) = showsPrec i (LT.cons x (LT.fromStrict xs))
 
 {- | @'fromString' = 'text'fromString'@
 
 🌶️ Warning: @('fromString' "" :: 'Text'') = ⊥@ -}
-instance IsString Text'
-  where
+instance IsString Text' where
     fromString = text'fromString
 
-{- | Convert an ordinary 'String' to a non-empty 'Text''.
+{- | Convert an ordinary 'String' to a non-empty 'Text''
 
 🌶️ Warning: @text'fromString "" = ⊥@ -}
 text'fromString :: String -> Text'
 text'fromString [] = error "Text' cannot be empty"
 text'fromString (x : xs) = Text' x (T.pack xs)
 
-{- | Convert an ordinary 'T.Text' to a non-empty 'Text''.
+{- | Convert an ordinary 'T.Text' to a non-empty 'Text''
 
 🌶️ Warning: @text'fromText "" = ⊥@ -}
 text'fromText :: T.Text -> Text'
-text'fromText t =
-  case T.uncons t of
+text'fromText t = case T.uncons t of
     Nothing -> error "Text' cannot be empty"
     Just (x, xs) -> Text' x xs
 
-{- | A replacement rule.
+{- | A replacement rule
 
-> Replace "abc" "xyz"
+@Replace "abc" "xyz"@ means "When you encounter the string __@abc@__ in the
+input text, replace it with __@xyz@__."
 
-means
-
-/When you encounter the string __@abc@__ in the input text, replace it with __@xyz@__./
-
-The first argument must be a non-empty string, because there is no sensible way to interpret "replace all occurrences of the empty string." -}
-data Replace =
-  Replace
+The first argument must be a non-empty string, because there is no sensible way
+to interpret "replace all occurrences of the empty string." -}
+data Replace = Replace
     { replaceFrom :: Text' -- ^ A string we're looking for
     , replaceTo   :: T.Text  -- ^ A string we're replacing it with
     }
     deriving (Eq, Show)
 
-{- | A map where the keys are strings we're looking for, and the values are strings with which we're replacing a key that we find.
+{- | A map where the keys are strings we're looking for and the values are
+strings with which we're replacing a key that we find
 
-You may use 'listToMap' to construct a 'ReplaceMap' from a list of replacement rules, and you may use 'mapToAscList' to convert back to a list. -}
+You may use 'listToMap' to construct a 'ReplaceMap' from a list of replacement
+rules, and you may use 'mapToAscList' to convert back to a list. -}
 type ReplaceMap = Map Text' T.Text
 
-{- | Construct a 'ReplaceMap' from a list of replacement rules.
+{- | Construct a replacement map from a list of replacement rules
 
-If the list contains more than one replacement for the same search string, the last mapping is used, and earlier mappings are ignored. -}
+If the list contains more than one replacement for the same search string, the
+last mapping is used, and earlier mappings are ignored. -}
 listToMap :: Foldable f => f Replace -> ReplaceMap
 listToMap = Map.fromList . fmap toTuple . Foldable.toList
   where
     toTuple x = (replaceFrom x, replaceTo x)
 
-{- | Convert a replacement map to a list of replacement rules. The rules in the list will be sorted according to their 'replaceFrom' field in ascending order. -}
+{- | Convert a replacement map to a list of replacement rules
+
+The rules in the list will be sorted according to their 'replaceFrom' field in
+ascending order. -}
 mapToAscList :: ReplaceMap -> [Replace]
 mapToAscList = fmap (\(x, y) -> Replace x y) . Map.toAscList
 
-{- | A representation of a 'ReplaceMap' designed for efficient lookups when we perform the replacements in 'replaceWithTrie'.
+{- | A representation of a 'ReplaceMap' designed for efficient lookups when we
+perform the replacements in 'replaceWithTrie'
 
 You may construct a 'Trie' using 'listToTrie' or 'mapToTrie'. -}
 type Trie = Map Char Trie'
 
-{- | A variant of 'Trie' which may contain a value at the root of the tree. -}
-data Trie' =
-  Trie'
+{- | A variant of 'Trie' which may contain a value at the root of the tree -}
+data Trie' = Trie'
     { trieRoot     :: Maybe T.Text
     , trieBranches :: Trie
     }
   deriving (Eq, Show)
 
-{- | Draws a text diagram of a trie; useful for debugging. -}
+{- | Draws a text diagram of a trie; useful for debugging -}
 drawTrie :: Trie -> LT.Text
 drawTrie = LT.pack . Tree.drawForest . fmap (fmap T.unpack) . trieForest
 
@@ -169,31 +178,34 @@ trieForest :: Trie -> Tree.Forest T.Text
 trieForest = fmap (\(c, t) -> trieTree (T.singleton c) t) . Map.toAscList
 
 trieTree :: T.Text -> Trie' -> Tree T.Text
-trieTree c (Trie' r bs) =
-  case (r, Map.toAscList bs) of
+trieTree c (Trie' r bs) = case (r, Map.toAscList bs) of
     (Nothing, [(c', t)]) -> trieTree (T.snoc c c') t
     _ -> Tree.Node (T.append c (maybe T.empty (\rr -> T.pack (" - " ++ show rr)) r))
                    (trieForest bs)
 
-{- | Convert a replacement map to a trie, which is used to efficiently implement 'replaceWithTrie'. -}
+{- | Convert a replacement map to a trie, which is used to efficiently implement
+'replaceWithTrie' -}
 mapToTrie :: ReplaceMap -> Trie
 mapToTrie = ascListToTrie . mapToAscList
 
-{- | Convert a list of replacement rules to a trie, which is used to efficiently implement 'replaceWithTrie'.
+{- | Convert a list of replacement rules to a trie, which is used to efficiently
+implement 'replaceWithTrie'
 
-If the list contains more than one replacement for the same search string, the last mapping is used, and earlier mappings are ignored. -}
+If the list contains more than one replacement for the same search string, the
+last mapping is used, and earlier mappings are ignored. -}
 listToTrie :: Foldable f => f Replace -> Trie
 listToTrie = mapToTrie . listToMap
 
-{- | Convert a list of replacement rules to a 'Trie', where the rules must be sorted in ascending order by the 'replaceFrom' field.
+{- | Convert a list of replacement rules to a 'Trie', where the rules must be
+sorted in ascending order by the 'replaceFrom' field
 
-🌶️ Warning: this precondition is not checked. If you are not sure, it is safer to use 'listToTrie' instead. -}
-ascListToTrie
-  :: Foldable f
-  => f Replace  -- ^ This list must be sorted according to the 'replaceFrom'
-                --   field in ascending order
-                --
-                -- 🌶️ Warning: this precondition is not checked
+🌶️ Warning: this precondition is not checked. If you are not sure, it is safer
+to use 'listToTrie' instead. -}
+ascListToTrie :: Foldable f =>
+  f Replace  -- ^ This list must be sorted according to the 'replaceFrom'
+             --   field in ascending order
+             --
+             -- 🌶️ Warning: this precondition is not checked
   -> Trie
 ascListToTrie =
     Map.fromAscList
@@ -203,12 +215,11 @@ ascListToTrie =
     firstChar = text'head . replaceFrom . NonEmpty.head
     subtrie = ascListToTrie' . fmap (\(Replace x y) -> (text'tail x, y))
 
-ascListToTrie'
-  :: Foldable f
-  => f (T.Text, T.Text)  -- ^ This list must be sorted according to the left
-                         --   field of the tuple in ascending order
-                         --
-                         -- 🌶️ Warning: this precondition is not checked
+ascListToTrie' :: Foldable f =>
+  f (T.Text, T.Text)  -- ^ This list must be sorted according to the left
+                      --   field of the tuple in ascending order
+                      --
+                      -- 🌶️ Warning: this precondition is not checked
   -> Trie'
 ascListToTrie' = f . Foldable.toList
   where

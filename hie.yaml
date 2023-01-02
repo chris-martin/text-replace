@@ -1,8 +1,0 @@
-cradle:
-  cabal:
-    - path: "./text-replace/library"
-      component: "lib:text-replace"
-    - path: "./text-replace/app"
-      component: "exe:text-replace"
-    - path: "./text-replace/test"
-      component: "test:properties"
