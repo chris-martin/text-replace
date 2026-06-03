@@ -1,2 +1,1 @@
-To test, run `nix-build`. This will build and test the package with all
-supported GHC and dependency versions.
+Moved to https://codeberg.org/chris-martin/text-replace
