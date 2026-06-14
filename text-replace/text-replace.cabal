@@ -32,7 +32,7 @@ common base
     default-language: Haskell2010
     ghc-options: -Wall
     build-depends:
-        base ^>= 4.14 || ^>= 4.15 || ^>= 4.16 || ^>= 4.17
+        base >= 4.14 && < 4.20
       , text ^>= 1.2.4 || ^>= 2.0
 
 library
@@ -47,7 +47,7 @@ executable text-replace
     hs-source-dirs: app
     main-is: text-replace.hs
     build-depends:
-        optparse-applicative ^>= 0.16.1 || ^>= 0.17
+        optparse-applicative >= 0.16.1 && < 0.19
       , parsec ^>= 3.1.14
       , text-replace
 
